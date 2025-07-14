@@ -1,4 +1,4 @@
-// Copyright 2021 TierIV
+// Copyright 2025 TierIV
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef STOP_FILTER_HPP_
-#define STOP_FILTER_HPP_
+#ifndef STOP_FILTER_NODE_HPP_
+#define STOP_FILTER_NODE_HPP_
 
 #include <rclcpp/rclcpp.hpp>
 #include <tf2/LinearMath/Quaternion.hpp>
@@ -33,12 +33,29 @@
 #include <string>
 #include <vector>
 
+#include "autoware/stop_filter/stop_filter.hpp"
+
 namespace autoware::stop_filter
 {
-class StopFilter : public rclcpp::Node
+
+class MessageFilter
+{
+  public:
+  MessageFilter(double linear_x_threshold, double angular_z_threshold);
+  autoware_internal_debug_msgs::msg::BoolStamped create_stop_flag_msg(
+    const nav_msgs::msg::Odometry::SharedPtr input);
+  nav_msgs::msg::Odometry create_filtered_msg(
+    const nav_msgs::msg::Odometry::SharedPtr input);
+  private:
+    StopFilter stop_filter_;
+    FilterResult apply_filter(
+      const nav_msgs::msg::Odometry::SharedPtr input) const;
+};
+
+class StopFilterNode : public rclcpp::Node
 {
 public:
-  explicit StopFilter(const rclcpp::NodeOptions & node_options);
+  explicit StopFilterNode(const rclcpp::NodeOptions & node_options);
 
 private:
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;  //!< @brief odom publisher
@@ -47,8 +64,7 @@ private:
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
     sub_odom_;  //!< @brief measurement odometry subscriber
 
-  double vx_threshold_;  //!< @brief vx threshold
-  double wz_threshold_;  //!< @brief wz threshold
+    MessageFilter message_filter_;  //!< @brief stop filter
 
   /**
    * @brief set odometry measurement
@@ -56,4 +72,4 @@ private:
   void callback_odometry(const nav_msgs::msg::Odometry::SharedPtr msg);
 };
 }  // namespace autoware::stop_filter
-#endif  // STOP_FILTER_HPP_
+#endif  // STOP_FILTER_NODE_HPP_
