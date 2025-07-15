@@ -34,10 +34,10 @@ nav_msgs::msg::Odometry::SharedPtr createOdometryMessage(
   return msg;
 }
 
-TEST(MessageFilterTest, test_create_stop_flag_msg_moving)
+TEST(StopFilterProcessorTest, test_create_stop_flag_msg_moving)
 {
   // Create message with velocities above threshold (moving)
-  auto message_filter_ = std::make_unique<autoware::stop_filter::MessageFilter>(0.1, 0.1);
+  auto message_filter_ = std::make_unique<autoware::stop_filter::StopFilterProcessor>(0.1, 0.1);
   auto input_msg = createOdometryMessage(0.2, 0.0, 0.0, 0.0, 0.0, 0.2);
 
   // Test stop flag creation
@@ -48,10 +48,10 @@ TEST(MessageFilterTest, test_create_stop_flag_msg_moving)
   ASSERT_EQ(stop_flag_msg.stamp, input_msg->header.stamp);
 }
 
-TEST(MessageFilterTest, test_create_filtered_msg_stopped)
+TEST(StopFilterProcessorTest, test_create_filtered_msg_stopped)
 {
   // Create message with velocities below threshold (stopped)
-  auto message_filter_ = std::make_unique<autoware::stop_filter::MessageFilter>(0.1, 0.1);
+  auto message_filter_ = std::make_unique<autoware::stop_filter::StopFilterProcessor>(0.1, 0.1);
   auto input_msg = createOdometryMessage(0.05, 0.02, 0.01, 0.03, 0.04, 0.05);
 
   // Test filtered message creation

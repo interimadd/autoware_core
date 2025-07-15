@@ -17,12 +17,12 @@
 namespace autoware::stop_filter
 {
 
-MessageFilter::MessageFilter(double linear_x_threshold, double angular_z_threshold)
+StopFilterProcessor::StopFilterProcessor(double linear_x_threshold, double angular_z_threshold)
 : stop_filter_(linear_x_threshold, angular_z_threshold)
 {
 }
 
-FilterResult MessageFilter::apply_filter(const nav_msgs::msg::Odometry::SharedPtr input) const
+FilterResult StopFilterProcessor::apply_filter(const nav_msgs::msg::Odometry::SharedPtr input) const
 {
   Vector3D linear_velocity{
     input->twist.twist.linear.x, input->twist.twist.linear.y, input->twist.twist.linear.z};
@@ -32,7 +32,7 @@ FilterResult MessageFilter::apply_filter(const nav_msgs::msg::Odometry::SharedPt
   return stop_filter_.apply_stop_filter(linear_velocity, angular_velocity);
 }
 
-autoware_internal_debug_msgs::msg::BoolStamped MessageFilter::create_stop_flag_msg(
+autoware_internal_debug_msgs::msg::BoolStamped StopFilterProcessor::create_stop_flag_msg(
   const nav_msgs::msg::Odometry::SharedPtr input)
 {
   autoware_internal_debug_msgs::msg::BoolStamped stop_flag_msg;
@@ -44,7 +44,7 @@ autoware_internal_debug_msgs::msg::BoolStamped MessageFilter::create_stop_flag_m
   return stop_flag_msg;
 }
 
-nav_msgs::msg::Odometry MessageFilter::create_filtered_msg(
+nav_msgs::msg::Odometry StopFilterProcessor::create_filtered_msg(
   const nav_msgs::msg::Odometry::SharedPtr input)
 {
   nav_msgs::msg::Odometry filtered_msg = *input;
@@ -62,7 +62,7 @@ nav_msgs::msg::Odometry MessageFilter::create_filtered_msg(
 
 StopFilterNode::StopFilterNode(const rclcpp::NodeOptions & node_options)
 : rclcpp::Node("stop_filter", node_options),
-  message_filter_(
+  message_processor_(
     declare_parameter<double>("vx_threshold"), declare_parameter<double>("wz_threshold"))
 {
   sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(
@@ -75,8 +75,8 @@ StopFilterNode::StopFilterNode(const rclcpp::NodeOptions & node_options)
 
 void StopFilterNode::callback_odometry(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
-  pub_stop_flag_->publish(message_filter_.create_stop_flag_msg(msg));
-  pub_odom_->publish(message_filter_.create_filtered_msg(msg));
+  pub_stop_flag_->publish(message_processor_.create_stop_flag_msg(msg));
+  pub_odom_->publish(message_processor_.create_filtered_msg(msg));
 }
 }  // namespace autoware::stop_filter
 

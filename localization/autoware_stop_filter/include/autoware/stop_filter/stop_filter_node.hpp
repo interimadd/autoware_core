@@ -25,10 +25,10 @@
 namespace autoware::stop_filter
 {
 
-class MessageFilter
+class StopFilterProcessor
 {
 public:
-  MessageFilter(double linear_x_threshold, double angular_z_threshold);
+  StopFilterProcessor(double linear_x_threshold, double angular_z_threshold);
   autoware_internal_debug_msgs::msg::BoolStamped create_stop_flag_msg(
     const nav_msgs::msg::Odometry::SharedPtr input);
   nav_msgs::msg::Odometry create_filtered_msg(const nav_msgs::msg::Odometry::SharedPtr input);
@@ -50,7 +50,7 @@ private:
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
     sub_odom_;  //!< @brief measurement odometry subscriber
 
-  MessageFilter message_filter_;  //!< @brief stop filter
+  StopFilterProcessor message_processor_;
 
   /**
    * @brief set odometry measurement
