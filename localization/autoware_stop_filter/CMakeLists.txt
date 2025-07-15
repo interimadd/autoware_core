@@ -10,10 +10,17 @@ include_directories(
 
 ament_auto_add_library(${PROJECT_NAME} SHARED
   src/stop_filter.cpp
+)
+
+ament_auto_add_library(${PROJECT_NAME}_ros SHARED
   src/stop_filter_node.cpp
 )
 
-rclcpp_components_register_node(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME}_ros
+  ${PROJECT_NAME}
+)
+
+rclcpp_components_register_node(${PROJECT_NAME}_ros
   PLUGIN "autoware::stop_filter::StopFilterNode"
   EXECUTABLE ${PROJECT_NAME}_node
   EXECUTOR SingleThreadedExecutor
