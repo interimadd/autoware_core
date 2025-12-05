@@ -125,40 +125,48 @@ CropBoxFilter::CropBoxFilter(const rclcpp::NodeOptions & node_options)
 void CropBoxFilter::crop_pointcloud_inside_box(
   const PointCloud2 & cloud, PointCloud2 & output)
 {
-  int x_offset = cloud.fields[pcl::getFieldIndex(cloud, "x")].offset;
-  int y_offset = cloud.fields[pcl::getFieldIndex(cloud, "y")].offset;
-  int z_offset = cloud.fields[pcl::getFieldIndex(cloud, "z")].offset;
-
+  // Initialize output cloud structure
+  output.header.frame_id = tf_input_frame_;
+  output.header.stamp = cloud.header.stamp;
+  output.height = 1;
+  output.fields = cloud.fields;
+  output.is_bigendian = cloud.is_bigendian;
+  output.point_step = cloud.point_step;
+  output.is_dense = cloud.is_dense;
   output.data.resize(cloud.data.size());
+
+  // Create iterators for input point cloud
+  sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud, "x");
+  sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
+  sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
+
   size_t output_size = 0;
-
   int skipped_count = 0;
+  size_t point_index = 0;
 
-  // pointcloud processing loop
-  for (size_t global_offset = 0; global_offset + cloud.point_step <= cloud.data.size();
-       global_offset += cloud.point_step) {
-    // extract point data from point cloud data buffer
-    Eigen::Vector4f point;
+  // Process each point
+  for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++point_index) {
+    const float x = *iter_x;
+    const float y = *iter_y;
+    const float z = *iter_z;
 
-    std::memcpy(&point[0], &cloud.data[global_offset + x_offset], sizeof(float));
-    std::memcpy(&point[1], &cloud.data[global_offset + y_offset], sizeof(float));
-    std::memcpy(&point[2], &cloud.data[global_offset + z_offset], sizeof(float));
-    point[3] = 1;
-
-    if (!std::isfinite(point[0]) || !std::isfinite(point[1]) || !std::isfinite(point[2])) {
+    // Skip invalid points
+    if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) {
       skipped_count++;
       continue;
     }
 
-    // preprocess point for filtering
-    Eigen::Vector4f point_preprocessed = point;
-
+    // Check if point is inside the crop box
     bool point_is_inside =
-      point_preprocessed[2] > param_.min_z && point_preprocessed[2] < param_.max_z &&
-      point_preprocessed[1] > param_.min_y && point_preprocessed[1] < param_.max_y &&
-      point_preprocessed[0] > param_.min_x && point_preprocessed[0] < param_.max_x;
+      z > param_.min_z && z < param_.max_z &&
+      y > param_.min_y && y < param_.max_y &&
+      x > param_.min_x && x < param_.max_x;
+
+    // Apply filtering logic
     if ((!param_.negative && point_is_inside) || (param_.negative && !point_is_inside)) {
-      memcpy(&output.data[output_size], &cloud.data[global_offset], cloud.point_step);
+      // Copy entire point data (including all fields)
+      const size_t src_offset = point_index * cloud.point_step;
+      memcpy(&output.data[output_size], &cloud.data[src_offset], cloud.point_step);
       output_size += cloud.point_step;
     }
   }
@@ -169,18 +177,8 @@ void CropBoxFilter::crop_pointcloud_inside_box(
       skipped_count);
   }
 
-  // construct output cloud
+  // Resize output data to actual size
   output.data.resize(output_size);
-
-  output.header.frame_id = tf_input_frame_;
-
-  output.header.stamp = cloud.header.stamp;
-
-  output.height = 1;
-  output.fields = cloud.fields;
-  output.is_bigendian = cloud.is_bigendian;
-  output.point_step = cloud.point_step;
-  output.is_dense = cloud.is_dense;
   output.width = static_cast<uint32_t>(output.data.size() / output.height / output.point_step);
   output.row_step = static_cast<uint32_t>(output.data.size() / output.height);
 }

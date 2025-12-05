@@ -28,8 +28,6 @@
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
 
-#include <pcl_conversions/pcl_conversions.h>
-
 #include <memory>
 #include <string>
 #include <utility>
@@ -37,10 +35,6 @@
 
 using PointCloud2 = sensor_msgs::msg::PointCloud2;
 using PointCloud2ConstPtr = sensor_msgs::msg::PointCloud2::ConstSharedPtr;
-
-using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
-using PointCloudPtr = PointCloud::Ptr;
-using PointCloudConstPtr = PointCloud::ConstPtr;
 
 namespace autoware::crop_box_filter
 {
