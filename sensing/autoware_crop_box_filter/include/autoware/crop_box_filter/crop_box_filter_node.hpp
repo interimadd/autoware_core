@@ -119,6 +119,9 @@ private:
 
   void crop_pointcloud_inside_box(const PointCloud2 & cloud, PointCloud2 & output);
 
+  bool has_xyz_field(const PointCloud2ConstPtr & cloud);
+  bool has_valid_total_size(const PointCloud2ConstPtr & cloud);
+
 public:
   PCL_MAKE_ALIGNED_OPERATOR_NEW
   explicit CropBoxFilter(const rclcpp::NodeOptions & options);

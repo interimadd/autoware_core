@@ -324,9 +324,8 @@ rcl_interfaces::msg::SetParametersResult CropBoxFilter::param_callback(
   return result;
 }
 
-bool CropBoxFilter::is_valid(const PointCloud2ConstPtr & cloud)
+bool CropBoxFilter::has_xyz_field(const PointCloud2ConstPtr & cloud)
 {
-  // Check if the point cloud has x, y, z fields
   bool has_x = false;
   bool has_y = false;
   bool has_z = false;
@@ -341,15 +340,24 @@ bool CropBoxFilter::is_valid(const PointCloud2ConstPtr & cloud)
     }
   }
 
-  if (!has_x || !has_y || !has_z) {
+  return has_x && has_y && has_z;
+}
+
+bool CropBoxFilter::has_valid_total_size(const PointCloud2ConstPtr & cloud)
+{
+  return cloud->width * cloud->height * cloud->point_step == cloud->data.size();
+}
+
+bool CropBoxFilter::is_valid(const PointCloud2ConstPtr & cloud)
+{
+  if (!has_xyz_field(cloud)) {
     RCLCPP_ERROR(
       get_logger(),
       "The pointcloud does not contain required x, y, z fields. Aborting");
     return false;
   }
 
-  // Verify the total size of the point cloud
-  if (cloud->width * cloud->height * cloud->point_step != cloud->data.size()) {
+  if (!has_valid_total_size(cloud)) {
     RCLCPP_WARN(
       this->get_logger(),
       "Invalid PointCloud (data = %zu, width = %d, height = %d, step = %d) with stamp %f, "
