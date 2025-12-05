@@ -96,8 +96,6 @@ private:
 
   // function declaration *************************************
 
-  void publish_crop_box_polygon();
-
   void pointcloud_callback(const PointCloud2ConstPtr cloud);
 
   /** \brief Parameter service callback */
@@ -125,6 +123,7 @@ public:
   PCL_MAKE_ALIGNED_OPERATOR_NEW
   explicit CropBoxFilter(const rclcpp::NodeOptions & options);
   void filter_pointcloud(const PointCloud2ConstPtr & cloud, PointCloud2 & output);
+  geometry_msgs::msg::PolygonStamped create_crop_box_polygon_msg();
 };
 }  // namespace autoware::crop_box_filter
 

@@ -220,7 +220,8 @@ void CropBoxFilter::pointcloud_callback(const PointCloud2ConstPtr cloud)
 
   // publish polygon if subscribers exist
   if (crop_box_polygon_pub_->get_subscription_count() > 0) {
-    publish_crop_box_polygon();
+    auto polygon_msg = create_crop_box_polygon_msg();
+    crop_box_polygon_pub_->publish(polygon_msg);
   }
 
   // add processing time for debug
@@ -246,7 +247,7 @@ void CropBoxFilter::pointcloud_callback(const PointCloud2ConstPtr cloud)
   published_time_publisher_->publish_if_subscribed(pub_output_, cloud->header.stamp);
 }
 
-void CropBoxFilter::publish_crop_box_polygon()
+geometry_msgs::msg::PolygonStamped CropBoxFilter::create_crop_box_polygon_msg()
 {
   auto generatePoint = [](double x, double y, double z) {
     geometry_msgs::msg::Point32 point;
@@ -294,7 +295,7 @@ void CropBoxFilter::publish_crop_box_polygon()
 
   polygon_msg.polygon.points.push_back(generatePoint(x1, y1, z2));
 
-  crop_box_polygon_pub_->publish(polygon_msg);
+  return polygon_msg;
 }
 
 // update parameters dynamicly
