@@ -26,6 +26,7 @@
 #include <geometry_msgs/msg/polygon_stamped.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
 
 #include <pcl_conversions/pcl_conversions.h>
 
@@ -69,11 +70,8 @@ private:
   /** \brief Internal mutex. */
   std::mutex mutex_;
 
-  bool need_preprocess_transform_ = false;
-  bool need_postprocess_transform_ = false;
-
-  Eigen::Matrix4f eigen_transform_preprocess_ = Eigen::Matrix4f::Identity(4, 4);
-  Eigen::Matrix4f eigen_transform_postprocess_ = Eigen::Matrix4f::Identity(4, 4);
+  geometry_msgs::msg::TransformStamped pre_transform_stamped_;
+  geometry_msgs::msg::TransformStamped post_transform_stamped_;
 
   struct CropBoxParam
   {
@@ -142,6 +140,8 @@ private:
     }
     return false;
   }
+
+  void crop_pointcloud_inside_box(const PointCloud2 & cloud, PointCloud2 & output);
 
 public:
   PCL_MAKE_ALIGNED_OPERATOR_NEW

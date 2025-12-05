@@ -52,38 +52,26 @@ CropBoxFilter::CropBoxFilter(const rclcpp::NodeOptions & node_options)
 
     transform_listener_ = std::make_unique<autoware_utils_tf::TransformListener>(this);
 
-    if (tf_input_orig_frame_ == tf_input_frame_) {
-      need_preprocess_transform_ = false;
-      eigen_transform_preprocess_ = Eigen::Matrix4f::Identity(4, 4);
+    pre_transform_stamped_ = geometry_msgs::msg::TransformStamped();
+    auto pre_tf_ptr = transform_listener_->get_transform(
+      tf_input_frame_, tf_input_orig_frame_, this->now(), rclcpp::Duration::from_seconds(1.0));
+    if (!pre_tf_ptr) {
+      RCLCPP_ERROR(
+        this->get_logger(), "Cannot get transform from %s to %s. Please check your TF tree.",
+        tf_input_orig_frame_.c_str(), tf_input_frame_.c_str());
     } else {
-      auto tf_ptr = transform_listener_->get_transform(
-        tf_input_frame_, tf_input_orig_frame_, this->now(), rclcpp::Duration::from_seconds(1.0));
-      if (!tf_ptr) {
-        RCLCPP_ERROR(
-          this->get_logger(), "Cannot get transform from %s to %s. Please check your TF tree.",
-          tf_input_orig_frame_.c_str(), tf_input_frame_.c_str());
-      } else {
-        auto eigen_tf = tf2::transformToEigen(*tf_ptr);
-        eigen_transform_preprocess_ = eigen_tf.matrix().cast<float>();
-        need_preprocess_transform_ = true;
-      }
+      pre_transform_stamped_ = *pre_tf_ptr;
     }
 
-    if (tf_input_frame_ == tf_output_frame_) {
-      need_postprocess_transform_ = false;
-      eigen_transform_postprocess_ = Eigen::Matrix4f::Identity(4, 4);
+    post_transform_stamped_ = geometry_msgs::msg::TransformStamped();
+    auto post_tf_ptr = transform_listener_->get_transform(
+      tf_output_frame_, tf_input_frame_, this->now(), rclcpp::Duration::from_seconds(1.0));
+    if (!post_tf_ptr) {
+      RCLCPP_ERROR(
+        this->get_logger(), "Cannot get transform from %s to %s. Please check your TF tree.",
+        tf_input_frame_.c_str(), tf_output_frame_.c_str());
     } else {
-      auto tf_ptr = transform_listener_->get_transform(
-        tf_output_frame_, tf_input_frame_, this->now(), rclcpp::Duration::from_seconds(1.0));
-      if (!tf_ptr) {
-        RCLCPP_ERROR(
-          this->get_logger(), "Cannot get transform from %s to %s. Please check your TF tree.",
-          tf_input_frame_.c_str(), tf_output_frame_.c_str());
-      } else {
-        auto eigen_tf = tf2::transformToEigen(*tf_ptr);
-        eigen_transform_postprocess_ = eigen_tf.matrix().cast<float>();
-        need_postprocess_transform_ = true;
-      }
+      post_transform_stamped_ = *post_tf_ptr;
     }
   }
 
@@ -134,26 +122,27 @@ CropBoxFilter::CropBoxFilter(const rclcpp::NodeOptions & node_options)
   RCLCPP_DEBUG(this->get_logger(), "[Filter Constructor] successfully created.");
 }
 
-void CropBoxFilter::filter_pointcloud(const PointCloud2ConstPtr & cloud, PointCloud2 & output)
+void CropBoxFilter::crop_pointcloud_inside_box(
+  const PointCloud2 & cloud, PointCloud2 & output)
 {
-  int x_offset = cloud->fields[pcl::getFieldIndex(*cloud, "x")].offset;
-  int y_offset = cloud->fields[pcl::getFieldIndex(*cloud, "y")].offset;
-  int z_offset = cloud->fields[pcl::getFieldIndex(*cloud, "z")].offset;
+  int x_offset = cloud.fields[pcl::getFieldIndex(cloud, "x")].offset;
+  int y_offset = cloud.fields[pcl::getFieldIndex(cloud, "y")].offset;
+  int z_offset = cloud.fields[pcl::getFieldIndex(cloud, "z")].offset;
 
-  output.data.resize(cloud->data.size());
+  output.data.resize(cloud.data.size());
   size_t output_size = 0;
 
   int skipped_count = 0;
 
   // pointcloud processing loop
-  for (size_t global_offset = 0; global_offset + cloud->point_step <= cloud->data.size();
-       global_offset += cloud->point_step) {
+  for (size_t global_offset = 0; global_offset + cloud.point_step <= cloud.data.size();
+       global_offset += cloud.point_step) {
     // extract point data from point cloud data buffer
     Eigen::Vector4f point;
 
-    std::memcpy(&point[0], &cloud->data[global_offset + x_offset], sizeof(float));
-    std::memcpy(&point[1], &cloud->data[global_offset + y_offset], sizeof(float));
-    std::memcpy(&point[2], &cloud->data[global_offset + z_offset], sizeof(float));
+    std::memcpy(&point[0], &cloud.data[global_offset + x_offset], sizeof(float));
+    std::memcpy(&point[1], &cloud.data[global_offset + y_offset], sizeof(float));
+    std::memcpy(&point[2], &cloud.data[global_offset + z_offset], sizeof(float));
     point[3] = 1;
 
     if (!std::isfinite(point[0]) || !std::isfinite(point[1]) || !std::isfinite(point[2])) {
@@ -164,35 +153,13 @@ void CropBoxFilter::filter_pointcloud(const PointCloud2ConstPtr & cloud, PointCl
     // preprocess point for filtering
     Eigen::Vector4f point_preprocessed = point;
 
-    // apply pre-transform if needed
-    if (need_preprocess_transform_) {
-      point_preprocessed = eigen_transform_preprocess_ * point;
-    }
-
     bool point_is_inside =
       point_preprocessed[2] > param_.min_z && point_preprocessed[2] < param_.max_z &&
       point_preprocessed[1] > param_.min_y && point_preprocessed[1] < param_.max_y &&
       point_preprocessed[0] > param_.min_x && point_preprocessed[0] < param_.max_x;
     if ((!param_.negative && point_is_inside) || (param_.negative && !point_is_inside)) {
-      // apply post-transform if needed
-      if (need_postprocess_transform_) {
-        Eigen::Vector4f point_postprocessed = eigen_transform_postprocess_ * point_preprocessed;
-
-        memcpy(&output.data[output_size], &cloud->data[global_offset], cloud->point_step);
-
-        std::memcpy(&output.data[output_size + x_offset], &point_postprocessed[0], sizeof(float));
-        std::memcpy(&output.data[output_size + y_offset], &point_postprocessed[1], sizeof(float));
-        std::memcpy(&output.data[output_size + z_offset], &point_postprocessed[2], sizeof(float));
-      } else {
-        memcpy(&output.data[output_size], &cloud->data[global_offset], cloud->point_step);
-
-        if (need_preprocess_transform_) {
-          std::memcpy(&output.data[output_size + x_offset], &point_preprocessed[0], sizeof(float));
-          std::memcpy(&output.data[output_size + y_offset], &point_preprocessed[1], sizeof(float));
-          std::memcpy(&output.data[output_size + z_offset], &point_preprocessed[2], sizeof(float));
-        }
-      }
-      output_size += cloud->point_step;
+      memcpy(&output.data[output_size], &cloud.data[global_offset], cloud.point_step);
+      output_size += cloud.point_step;
     }
   }
 
@@ -205,17 +172,28 @@ void CropBoxFilter::filter_pointcloud(const PointCloud2ConstPtr & cloud, PointCl
   // construct output cloud
   output.data.resize(output_size);
 
-  output.header.frame_id = tf_output_frame_;
+  output.header.frame_id = tf_input_frame_;
 
-  output.header.stamp = cloud->header.stamp;
+  output.header.stamp = cloud.header.stamp;
 
   output.height = 1;
-  output.fields = cloud->fields;
-  output.is_bigendian = cloud->is_bigendian;
-  output.point_step = cloud->point_step;
-  output.is_dense = cloud->is_dense;
+  output.fields = cloud.fields;
+  output.is_bigendian = cloud.is_bigendian;
+  output.point_step = cloud.point_step;
+  output.is_dense = cloud.is_dense;
   output.width = static_cast<uint32_t>(output.data.size() / output.height / output.point_step);
   output.row_step = static_cast<uint32_t>(output.data.size() / output.height);
+}
+
+void CropBoxFilter::filter_pointcloud(const PointCloud2ConstPtr & cloud, PointCloud2 & output)
+{
+  PointCloud2 cloud_in_input_frame;
+  tf2::doTransform(*cloud, cloud_in_input_frame, pre_transform_stamped_);
+
+  PointCloud2 cropped_cloud;
+  crop_pointcloud_inside_box(cloud_in_input_frame, cropped_cloud);
+
+  tf2::doTransform(cropped_cloud, output, post_transform_stamped_);
 }
 
 void CropBoxFilter::pointcloud_callback(const PointCloud2ConstPtr cloud)
