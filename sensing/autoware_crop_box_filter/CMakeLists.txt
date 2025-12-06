@@ -14,16 +14,29 @@ include_directories(
   ${EIGEN3_INCLUDE_DIRS}
 )
 
+ament_auto_add_library(crop_box_filter_core SHARED
+  src/crop_box_filter.cpp
+)
+
 ament_auto_add_library(crop_box_filter_node SHARED
   src/crop_box_filter_node.cpp
 )
 
+target_link_libraries(crop_box_filter_node
+  crop_box_filter_core
+)
+
 rclcpp_components_register_node(crop_box_filter_node
   PLUGIN "autoware::crop_box_filter::CropBoxFilter"
-  EXECUTABLE crop_box_filter)
+  EXECUTABLE crop_box_filter
+)
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
+  ament_auto_add_gtest(test_crop_box_filter
+    test/test_crop_box_filter.cpp
+  )
+
   ament_auto_add_gtest(test_crop_box_filter_node
     test/test_crop_box_filter_node.cpp
   )
