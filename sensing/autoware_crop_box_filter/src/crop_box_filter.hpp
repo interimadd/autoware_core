@@ -16,6 +16,7 @@
 #define CROP_BOX_FILTER_HPP_
 
 #include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <rclcpp/time.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
 namespace autoware::crop_box_filter
@@ -44,15 +45,18 @@ using PointCloud2 = sensor_msgs::msg::PointCloud2;
 //   CropBoxSize _box_size;
 // };
 
-// class BoxPolygonCreator
-// {
-// public:
-//   BoxPolygonCreator(CropBoxSize box_size);
-//   geometry_msgs::msg::PolygonStamped create_crop_box_polygon_msg(const rclcpp::Time timestamp);
+class BoxPolygonCreator
+{
+public:
+  BoxPolygonCreator(CropBoxSize box_size, std::string frame_id);
+  geometry_msgs::msg::PolygonStamped create_crop_box_polygon_msg(const rclcpp::Time timestamp);
 
-// private:
-//   CropBoxSize _box_size;
-// };
+private:
+  CropBoxSize _box_size;
+  std::string _frame_id;
+  geometry_msgs::msg::Point32 generate_point(double x, double y, double z);
+  std::vector<geometry_msgs::msg::Point32> generate_box_polygon();
+};
 
 }  // namespace autoware::crop_box_filter
 #endif  // CROP_BOX_FILTER_HPP_

@@ -16,8 +16,31 @@
 
 #include <gtest/gtest.h>
 
-
-TEST(CropBoxFilterTest, AlwaysFail)
+namespace autoware::crop_box_filter
 {
-    EXPECT_EQ(1, 2);
+
+TEST(CropBoxFilterTest, CreateCropBoxPolygonMsg)
+{
+  CropBoxSize box_size;
+  box_size.min_x = 0.0;
+  box_size.min_y = 0.0;
+  box_size.min_z = 0.0;
+  box_size.max_x = 1.0;
+  box_size.max_y = 1.0;
+  box_size.max_z = 1.0;
+  std::string frame_id = "test_frame";
+
+  BoxPolygonCreator creator(box_size, frame_id);
+
+  // Call the function to create polygon message
+  auto polygon_msg = creator.create_crop_box_polygon_msg(rclcpp::Time(0));
+
+  // Verify header
+  EXPECT_EQ(polygon_msg.header.frame_id, "test_frame");
+
+  // Verify polygon points - should form a 3D box wireframe
+  // The polygon should have 16 points that trace the edges of the box
+  ASSERT_EQ(polygon_msg.polygon.points.size(), 16u);
 }
+
+}  // namespace autoware::crop_box_filter
