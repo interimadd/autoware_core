@@ -249,24 +249,6 @@ TEST(CropBoxFilterTest, FilterExcludePointsOutsideBoxWhenPositive)
   run_crop_box_filter_test(params, input_points, expected_points);
 }
 
-TEST(CropBoxFilterTest, CreateCropBoxPolygonMsg)
-{
-  CropBoxParams params;
-  params.input_frame = "test_frame";
-
-  auto node = create_crop_box_filter_node(params);
-
-  // Call the function to create polygon message
-  auto polygon_msg = node->create_crop_box_polygon_msg();
-
-  // Verify header
-  EXPECT_EQ(polygon_msg.header.frame_id, "test_frame");
-
-  // Verify polygon points - should form a 3D box wireframe
-  // The polygon should have 16 points that trace the edges of the box
-  ASSERT_EQ(polygon_msg.polygon.points.size(), 16u);
-}
-
 int main(int argc, char ** argv)
 {
   rclcpp::init(0, nullptr);

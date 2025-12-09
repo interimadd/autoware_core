@@ -15,6 +15,7 @@
 // limitations under the License.
 
 #include "autoware/crop_box_filter/crop_box_filter_node.hpp"
+#include "crop_box_filter.hpp"
 
 #include <tf2_eigen/tf2_eigen.hpp>
 
@@ -194,6 +195,20 @@ void CropBoxFilter::filter_pointcloud(const PointCloud2ConstPtr & cloud, PointCl
   tf2::doTransform(cropped_cloud, output, post_transform_stamped_);
 }
 
+void CropBoxFilter::publish_crop_box_polygon()
+{
+  bool exist_subscribers = crop_box_polygon_pub_->get_subscription_count() > 0;
+  if (!exist_subscribers) {
+    return;
+  }
+
+  CropBoxSize box_size = {
+    param_.min_x, param_.min_y, param_.min_z, param_.max_x, param_.max_y, param_.max_z};
+  BoxPolygonCreator box_creator(box_size, tf_input_frame_);
+  auto polygon_msg = box_creator.create_crop_box_polygon_msg(get_clock()->now());
+  crop_box_polygon_pub_->publish(polygon_msg);
+}
+
 void CropBoxFilter::pointcloud_callback(const PointCloud2ConstPtr cloud)
 {
   // check whether the pointcloud is valid
@@ -218,11 +233,8 @@ void CropBoxFilter::pointcloud_callback(const PointCloud2ConstPtr cloud)
   // filtering
   filter_pointcloud(cloud, output);
 
-  // publish polygon if subscribers exist
-  if (crop_box_polygon_pub_->get_subscription_count() > 0) {
-    auto polygon_msg = create_crop_box_polygon_msg();
-    crop_box_polygon_pub_->publish(polygon_msg);
-  }
+  // publish polygon
+  publish_crop_box_polygon();
 
   // add processing time for debug
   if (debug_publisher_) {
@@ -245,57 +257,6 @@ void CropBoxFilter::pointcloud_callback(const PointCloud2ConstPtr cloud)
   // publish result pointcloud
   pub_output_->publish(std::move(output));
   published_time_publisher_->publish_if_subscribed(pub_output_, cloud->header.stamp);
-}
-
-geometry_msgs::msg::PolygonStamped CropBoxFilter::create_crop_box_polygon_msg()
-{
-  auto generatePoint = [](double x, double y, double z) {
-    geometry_msgs::msg::Point32 point;
-    point.x = x;
-    point.y = y;
-    point.z = z;
-    return point;
-  };
-
-  const double x1 = param_.max_x;
-  const double x2 = param_.min_x;
-  const double x3 = param_.min_x;
-  const double x4 = param_.max_x;
-
-  const double y1 = param_.max_y;
-  const double y2 = param_.max_y;
-  const double y3 = param_.min_y;
-  const double y4 = param_.min_y;
-
-  const double z1 = param_.min_z;
-  const double z2 = param_.max_z;
-
-  geometry_msgs::msg::PolygonStamped polygon_msg;
-  polygon_msg.header.frame_id = tf_input_frame_;
-  polygon_msg.header.stamp = get_clock()->now();
-  polygon_msg.polygon.points.push_back(generatePoint(x1, y1, z1));
-  polygon_msg.polygon.points.push_back(generatePoint(x2, y2, z1));
-  polygon_msg.polygon.points.push_back(generatePoint(x3, y3, z1));
-  polygon_msg.polygon.points.push_back(generatePoint(x4, y4, z1));
-  polygon_msg.polygon.points.push_back(generatePoint(x1, y1, z1));
-
-  polygon_msg.polygon.points.push_back(generatePoint(x1, y1, z2));
-
-  polygon_msg.polygon.points.push_back(generatePoint(x2, y2, z2));
-  polygon_msg.polygon.points.push_back(generatePoint(x2, y2, z1));
-  polygon_msg.polygon.points.push_back(generatePoint(x2, y2, z2));
-
-  polygon_msg.polygon.points.push_back(generatePoint(x3, y3, z2));
-  polygon_msg.polygon.points.push_back(generatePoint(x3, y3, z1));
-  polygon_msg.polygon.points.push_back(generatePoint(x3, y3, z2));
-
-  polygon_msg.polygon.points.push_back(generatePoint(x4, y4, z2));
-  polygon_msg.polygon.points.push_back(generatePoint(x4, y4, z1));
-  polygon_msg.polygon.points.push_back(generatePoint(x4, y4, z2));
-
-  polygon_msg.polygon.points.push_back(generatePoint(x1, y1, z2));
-
-  return polygon_msg;
 }
 
 // update parameters dynamicly

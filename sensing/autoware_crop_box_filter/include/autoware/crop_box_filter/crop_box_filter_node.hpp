@@ -121,12 +121,12 @@ private:
 
   bool has_xyz_field(const PointCloud2ConstPtr & cloud);
   bool has_valid_total_size(const PointCloud2ConstPtr & cloud);
+  void publish_crop_box_polygon();
 
 public:
   PCL_MAKE_ALIGNED_OPERATOR_NEW
   explicit CropBoxFilter(const rclcpp::NodeOptions & options);
   void filter_pointcloud(const PointCloud2ConstPtr & cloud, PointCloud2 & output);
-  geometry_msgs::msg::PolygonStamped create_crop_box_polygon_msg();
 };
 }  // namespace autoware::crop_box_filter
 
