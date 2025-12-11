@@ -36,12 +36,6 @@ bool CropBoxFilterCore::is_point_inside_box(const float x, const float y, const 
 PointCloud2 CropBoxFilterCore::extract_pointcloud_inside_box(const PointCloud2 input) const
 {
   PointCloud2 output;
-  output.header = input.header;
-  output.is_bigendian = input.is_bigendian;
-  output.is_dense = input.is_dense;
-  output.point_step = input.point_step;
-  output.height = 1;
-  output.fields = input.fields;
   output.data.reserve(input.data.size());
 
   sensor_msgs::PointCloud2ConstIterator<float> iter_x(input, "x");
@@ -59,8 +53,14 @@ PointCloud2 CropBoxFilterCore::extract_pointcloud_inside_box(const PointCloud2 i
       output_size += input.point_step;
     }
   }
-
   output.data.shrink_to_fit();
+
+  output.header = input.header;
+  output.is_bigendian = input.is_bigendian;
+  output.is_dense = input.is_dense;
+  output.point_step = input.point_step;
+  output.height = input.height;
+  output.fields = input.fields;
   output.width = static_cast<uint32_t>(output.data.size() / output.point_step);
   output.row_step = static_cast<uint32_t>(output.data.size() / output.height);
 
@@ -70,12 +70,6 @@ PointCloud2 CropBoxFilterCore::extract_pointcloud_inside_box(const PointCloud2 i
 PointCloud2 CropBoxFilterCore::extract_pointcloud_outside_box(const PointCloud2 input) const
 {
   PointCloud2 output;
-  output.header = input.header;
-  output.is_bigendian = input.is_bigendian;
-  output.is_dense = input.is_dense;
-  output.point_step = input.point_step;
-  output.height = 1;
-  output.fields = input.fields;
   output.data.reserve(input.data.size());
 
   sensor_msgs::PointCloud2ConstIterator<float> iter_x(input, "x");
@@ -93,8 +87,14 @@ PointCloud2 CropBoxFilterCore::extract_pointcloud_outside_box(const PointCloud2 
       output_size += input.point_step;
     }
   }
-
   output.data.shrink_to_fit();
+
+  output.header = input.header;
+  output.is_bigendian = input.is_bigendian;
+  output.is_dense = input.is_dense;
+  output.point_step = input.point_step;
+  output.height = input.height;
+  output.fields = input.fields;
   output.width = static_cast<uint32_t>(output.data.size() / output.point_step);
   output.row_step = static_cast<uint32_t>(output.data.size() / output.height);
 
