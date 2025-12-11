@@ -124,7 +124,6 @@ private:
   void publish_crop_box_polygon();
 
 public:
-  PCL_MAKE_ALIGNED_OPERATOR_NEW
   explicit CropBoxFilter(const rclcpp::NodeOptions & options);
   void filter_pointcloud(const PointCloud2ConstPtr & cloud, PointCloud2 & output);
 };
