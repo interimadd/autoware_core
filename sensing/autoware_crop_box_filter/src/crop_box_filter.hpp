@@ -19,6 +19,8 @@
 #include <rclcpp/time.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
+#include <functional>
+
 namespace autoware::crop_box_filter
 {
 
@@ -44,6 +46,9 @@ public:
 private:
   CropBoxSize _box_size;
   bool is_point_inside_box(const float x, const float y, const float z) const;
+  PointCloud2 filter(
+    const PointCloud2 input,
+    std::function<bool(float, float, float)> filter_func) const;
 };
 
 class BoxPolygonCreator
