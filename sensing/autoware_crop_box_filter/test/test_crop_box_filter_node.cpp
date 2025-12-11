@@ -15,6 +15,7 @@
 // limitations under the License.
 
 #include "autoware/crop_box_filter/crop_box_filter_node.hpp"
+#include "pointcloud_points_vector_conversion.hpp"
 
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 
@@ -25,63 +26,6 @@
 #include <string>
 #include <vector>
 
-sensor_msgs::msg::PointCloud2 create_pointcloud2(std::vector<std::array<float, 3>> & points)
-{
-  sensor_msgs::msg::PointCloud2 pointcloud;
-  sensor_msgs::PointCloud2Modifier modifier(pointcloud);
-  modifier.setPointCloud2FieldsByString(1, "xyz");
-  modifier.resize(points.size());
-
-  sensor_msgs::PointCloud2Iterator<float> iter_x(pointcloud, "x");
-  sensor_msgs::PointCloud2Iterator<float> iter_y(pointcloud, "y");
-  sensor_msgs::PointCloud2Iterator<float> iter_z(pointcloud, "z");
-
-  for (const auto & point : points) {
-    *iter_x = point[0];
-    *iter_y = point[1];
-    *iter_z = point[2];
-    ++iter_x;
-    ++iter_y;
-    ++iter_z;
-  }
-
-  return pointcloud;
-}
-
-std::vector<std::array<float, 3>> extract_points_from_cloud(
-  const sensor_msgs::msg::PointCloud2 & cloud)
-{
-  std::vector<std::array<float, 3>> points;
-  sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud, "x");
-  sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
-  sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
-
-  for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
-    points.push_back({*iter_x, *iter_y, *iter_z});
-  }
-  return points;
-}
-
-bool is_same_points(
-  const std::vector<std::array<float, 3>> & points1,
-  const std::vector<std::array<float, 3>> & points2)
-{
-  if (points1.size() != points2.size()) {
-    return false;
-  }
-  // sort both vectors to ensure order does not affect comparison
-  std::vector<std::array<float, 3>> sorted_points1 = points1;
-  std::vector<std::array<float, 3>> sorted_points2 = points2;
-  std::sort(sorted_points1.begin(), sorted_points1.end());
-  std::sort(sorted_points2.begin(), sorted_points2.end());
-  // compare each point
-  for (size_t i = 0; i < sorted_points1.size(); ++i) {
-    if (sorted_points1[i] != sorted_points2[i]) {
-      return false;
-    }
-  }
-  return true;
-}
 
 // Test helper structure to hold crop box parameters
 struct CropBoxParams

@@ -13,11 +13,11 @@
 // limitations under the License.
 
 #include "autoware/crop_box_filter/crop_box_filter_node.hpp"
+#include "pointcloud_points_vector_conversion.hpp"
 
 #include <rclcpp/executors.hpp>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
-#include <sensor_msgs/point_cloud2_iterator.hpp>
 
 #include <gtest/gtest.h>
 #include <tf2_ros/static_transform_broadcaster.h>
@@ -28,58 +28,6 @@
 #include <thread>
 #include <vector>
 
-sensor_msgs::msg::PointCloud2 create_pointcloud2(std::vector<std::array<float, 3>> & points)
-{
-  sensor_msgs::msg::PointCloud2 pointcloud;
-  sensor_msgs::PointCloud2Modifier modifier(pointcloud);
-
-  // Create a PointCloud2 with XYZIRC fields (minimum required for this integration test)
-  modifier.setPointCloud2Fields(
-    6, "x", 1, sensor_msgs::msg::PointField::FLOAT32, "y", 1, sensor_msgs::msg::PointField::FLOAT32,
-    "z", 1, sensor_msgs::msg::PointField::FLOAT32, "intensity", 1,
-    sensor_msgs::msg::PointField::UINT8, "return_type", 1, sensor_msgs::msg::PointField::UINT8,
-    "channel", 1, sensor_msgs::msg::PointField::UINT16);
-
-  modifier.resize(points.size());
-
-  sensor_msgs::PointCloud2Iterator<float> iter_x(pointcloud, "x");
-  sensor_msgs::PointCloud2Iterator<float> iter_y(pointcloud, "y");
-  sensor_msgs::PointCloud2Iterator<float> iter_z(pointcloud, "z");
-  sensor_msgs::PointCloud2Iterator<uint8_t> iter_intensity(pointcloud, "intensity");
-  sensor_msgs::PointCloud2Iterator<uint8_t> iter_return_type(pointcloud, "return_type");
-  sensor_msgs::PointCloud2Iterator<uint16_t> iter_channel(pointcloud, "channel");
-
-  for (const auto & point : points) {
-    *iter_x = point[0];
-    *iter_y = point[1];
-    *iter_z = point[2];
-    *iter_intensity = 100;
-    *iter_return_type = 0;
-    *iter_channel = 0;
-    ++iter_x;
-    ++iter_y;
-    ++iter_z;
-    ++iter_intensity;
-    ++iter_return_type;
-    ++iter_channel;
-  }
-
-  return pointcloud;
-}
-
-std::vector<std::array<float, 3>> extract_points_from_cloud(
-  const sensor_msgs::msg::PointCloud2 & cloud)
-{
-  std::vector<std::array<float, 3>> points;
-  sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud, "x");
-  sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
-  sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
-
-  for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
-    points.push_back({*iter_x, *iter_y, *iter_z});
-  }
-  return points;
-}
 
 // Integration test class for launch test
 class CropBoxFilterIntegrationTest : public ::testing::Test
