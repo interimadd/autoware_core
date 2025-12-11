@@ -43,6 +43,7 @@ public:
 
 private:
   CropBoxSize _box_size;
+  bool is_point_inside_box(const float x, const float y, const float z) const;
 };
 
 class BoxPolygonCreator

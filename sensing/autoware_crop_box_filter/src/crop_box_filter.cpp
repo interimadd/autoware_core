@@ -25,6 +25,14 @@ CropBoxFilterCore::CropBoxFilterCore(CropBoxSize box_size) : _box_size(box_size)
 {
 }
 
+bool CropBoxFilterCore::is_point_inside_box(const float x, const float y, const float z) const
+{
+  return (
+    z > _box_size.min_z && z < _box_size.max_z &&
+    y > _box_size.min_y && y < _box_size.max_y &&
+    x > _box_size.min_x && x < _box_size.max_x);
+}
+
 PointCloud2 CropBoxFilterCore::extract_pointcloud_inside_box(const PointCloud2 input) const
 {
   PointCloud2 output;
@@ -43,14 +51,7 @@ PointCloud2 CropBoxFilterCore::extract_pointcloud_inside_box(const PointCloud2 i
   size_t point_index = 0;
   size_t output_size = 0;
   for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++point_index) {
-    const float x = *iter_x;
-    const float y = *iter_y;
-    const float z = *iter_z;
-
-    if (
-      z > _box_size.min_z && z < _box_size.max_z &&
-      y > _box_size.min_y && y < _box_size.max_y &&
-      x > _box_size.min_x && x < _box_size.max_x)
+    if (is_point_inside_box(*iter_x, *iter_y, *iter_z))
     {
       const size_t src_offset = point_index * input.point_step;
       output.data.insert(
@@ -84,14 +85,7 @@ PointCloud2 CropBoxFilterCore::extract_pointcloud_outside_box(const PointCloud2 
   size_t point_index = 0;
   size_t output_size = 0;
   for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++point_index) {
-    const float x = *iter_x;
-    const float y = *iter_y;
-    const float z = *iter_z;
-
-    if (
-      z < _box_size.min_z || z > _box_size.max_z ||
-      y < _box_size.min_y || y > _box_size.max_y ||
-      x < _box_size.min_x || x > _box_size.max_x)
+    if (!is_point_inside_box(*iter_x, *iter_y, *iter_z))
     {
       const size_t src_offset = point_index * input.point_step;
       output.data.insert(
