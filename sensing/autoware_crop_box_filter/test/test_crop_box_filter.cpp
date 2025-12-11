@@ -105,4 +105,67 @@ TEST(CropBoxFilterTest, ExtractPointsInsideBox)
   EXPECT_TRUE(is_same_points(expected_points, extract_points_from_cloud(output)));
 }
 
+TEST(CropBoxFilterTest, ExtractPointsOutsideBoxWithZeroLengthPointCloud)
+{
+  CropBoxSize box_size;
+  box_size.min_x = -5.0;
+  box_size.max_x = 5.0;
+  box_size.min_y = -5.0;
+  box_size.max_y = 5.0;
+  box_size.min_z = -5.0;
+  box_size.max_z = 5.0;
+  std::vector<std::array<float, 3>> points;  // empty point cloud
+  PointCloud2 input = create_pointcloud2(points);
+
+  CropBoxFilterCore crop_box_filter(box_size);
+  PointCloud2 output_outside = crop_box_filter.extract_pointcloud_outside_box(input);
+
+  ASSERT_EQ(output_outside.data.size(), 0u);
+}
+
+TEST(CropBoxFilterTest, ExtractPointsOutsideBox)
+{
+  CropBoxSize box_size;
+  box_size.min_x = -1.0;
+  box_size.max_x = 1.0;
+  box_size.min_y = -2.0;
+  box_size.max_y = 2.0;
+  box_size.min_z = -3.0;
+  box_size.max_z = 3.0;
+
+  // clang-format off
+
+  // input points
+  std::vector<std::array<float, 3>> input_points = {
+    // points inside the box
+    {0.0f, 0.0f, 0.0f},
+    {0.5f, 1.5f, -2.5f},
+    {-0.5f, -1.5f, 2.5f},
+    // points outside the box
+    {2.0f, 0.0f, 0.0f},
+    {-2.0f, 0.0f, 0.0f},
+    {0.0f, 3.0f, 0.0f},
+    {0.0f, -3.0f, 0.0f},
+    {0.0f, 0.0f, 4.0f},
+    {0.0f, 0.0f, -4.0f}
+  };
+  // expected points after filtering
+  std::vector<std::array<float, 3>> expected_points = {
+    {2.0f, 0.0f, 0.0f},
+    {-2.0f, 0.0f, 0.0f},
+    {0.0f, 3.0f, 0.0f},
+    {0.0f, -3.0f, 0.0f},
+    {0.0f, 0.0f, 4.0f},
+    {0.0f, 0.0f, -4.0f}
+  };
+
+  // clang-format on
+
+  PointCloud2 input_cloud = create_pointcloud2(input_points);
+  CropBoxFilterCore crop_box_filter(box_size);
+  PointCloud2 output = crop_box_filter.extract_pointcloud_outside_box(input_cloud);
+
+  EXPECT_TRUE(is_same_points(expected_points, extract_points_from_cloud(output)));
+}
+
 }  // namespace autoware::crop_box_filter

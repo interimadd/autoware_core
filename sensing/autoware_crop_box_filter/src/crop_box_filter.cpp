@@ -66,6 +66,47 @@ PointCloud2 CropBoxFilterCore::extract_pointcloud_inside_box(const PointCloud2 i
   return output;
 }
 
+PointCloud2 CropBoxFilterCore::extract_pointcloud_outside_box(const PointCloud2 input) const
+{
+  PointCloud2 output;
+  output.header = input.header;
+  output.is_bigendian = input.is_bigendian;
+  output.is_dense = input.is_dense;
+  output.point_step = input.point_step;
+  output.height = 1;
+  output.fields = input.fields;
+  output.data.reserve(input.data.size());
+
+  sensor_msgs::PointCloud2ConstIterator<float> iter_x(input, "x");
+  sensor_msgs::PointCloud2ConstIterator<float> iter_y(input, "y");
+  sensor_msgs::PointCloud2ConstIterator<float> iter_z(input, "z");
+
+  size_t point_index = 0;
+  size_t output_size = 0;
+  for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++point_index) {
+    const float x = *iter_x;
+    const float y = *iter_y;
+    const float z = *iter_z;
+
+    if (
+      z < _box_size.min_z || z > _box_size.max_z ||
+      y < _box_size.min_y || y > _box_size.max_y ||
+      x < _box_size.min_x || x > _box_size.max_x)
+    {
+      const size_t src_offset = point_index * input.point_step;
+      output.data.insert(
+        output.data.end(), &input.data[src_offset], &input.data[src_offset + input.point_step]);
+      output_size += input.point_step;
+    }
+  }
+
+  output.data.shrink_to_fit();
+  output.width = static_cast<uint32_t>(output.data.size() / output.point_step);
+  output.row_step = static_cast<uint32_t>(output.data.size() / output.height);
+
+  return output;
+}
+
 BoxPolygonCreator::BoxPolygonCreator(CropBoxSize box_size, std::string frame_id)
 : _box_size(box_size), _frame_id(frame_id)
 {
