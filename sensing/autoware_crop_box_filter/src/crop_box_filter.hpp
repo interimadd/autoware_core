@@ -34,16 +34,16 @@ struct CropBoxSize
 
 using PointCloud2 = sensor_msgs::msg::PointCloud2;
 
-// class CropBoxFilter
-// {
-// public:
-//   CropBoxFilter(CropBoxSize box_size);
-//   PointCloud2 crop_pointcloud_inside_box(const PointCloud2 input) const;
-//   PointCloud2 crop_pointcloud_outside_box(const PointCloud2 input) const;
+class CropBoxFilterCore
+{
+public:
+  CropBoxFilterCore(CropBoxSize box_size);
+  PointCloud2 extract_pointcloud_inside_box(const PointCloud2 input) const;
+  // PointCloud2 crop_pointcloud_outside_box(const PointCloud2 input) const;
 
-// private:
-//   CropBoxSize _box_size;
-// };
+private:
+  CropBoxSize _box_size;
+};
 
 class BoxPolygonCreator
 {

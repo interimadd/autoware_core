@@ -43,4 +43,21 @@ TEST(CropBoxFilterTest, CreateCropBoxPolygonMsg)
   ASSERT_EQ(polygon_msg.polygon.points.size(), 16u);
 }
 
+TEST(CropBoxFilterTest, FilterExcludePointsOutsideBoxWithZeroLengthPointCloud)
+{
+  CropBoxSize box_size;
+  box_size.min_x = -5.0;
+  box_size.max_x = 5.0;
+  box_size.min_y = -5.0;
+  box_size.max_y = 5.0;
+  box_size.min_z = -5.0;
+  box_size.max_z = 5.0;
+  PointCloud2 input;
+
+  CropBoxFilterCore crop_box_filter(box_size);
+  PointCloud2 output_inside = crop_box_filter.extract_pointcloud_inside_box(input);
+
+  ASSERT_EQ(output_inside.data.size(), 0u);
+}
+
 }  // namespace autoware::crop_box_filter

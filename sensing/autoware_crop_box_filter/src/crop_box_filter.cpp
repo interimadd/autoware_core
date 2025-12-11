@@ -19,6 +19,17 @@
 namespace autoware::crop_box_filter
 {
 
+CropBoxFilterCore::CropBoxFilterCore(CropBoxSize box_size) : _box_size(box_size)
+{
+}
+
+PointCloud2 CropBoxFilterCore::extract_pointcloud_inside_box(const PointCloud2 input) const
+{
+  // Implementation of point cloud extraction inside the box goes here.
+  // This is a placeholder for the actual filtering logic.
+  return input;
+}
+
 BoxPolygonCreator::BoxPolygonCreator(CropBoxSize box_size, std::string frame_id)
 : _box_size(box_size), _frame_id(frame_id)
 {
