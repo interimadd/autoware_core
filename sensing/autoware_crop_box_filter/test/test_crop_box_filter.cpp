@@ -14,7 +14,7 @@
 
 #include "../src/crop_box_filter.hpp"
 
-#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include "pointcloud_points_vector_conversion.hpp"
 
 #include <gtest/gtest.h>
 
@@ -43,68 +43,6 @@ TEST(CropBoxFilterTest, CreateCropBoxPolygonMsg)
   // Verify polygon points - should form a 3D box wireframe
   // The polygon should have 16 points that trace the edges of the box
   ASSERT_EQ(polygon_msg.polygon.points.size(), 16u);
-}
-
-sensor_msgs::msg::PointCloud2 create_pointcloud2(std::vector<std::array<float, 3>> & points)
-{
-  sensor_msgs::msg::PointCloud2 pointcloud;
-  sensor_msgs::PointCloud2Modifier modifier(pointcloud);
-  modifier.setPointCloud2FieldsByString(1, "xyz");
-  modifier.resize(points.size());
-
-  sensor_msgs::PointCloud2Iterator<float> iter_x(pointcloud, "x");
-  sensor_msgs::PointCloud2Iterator<float> iter_y(pointcloud, "y");
-  sensor_msgs::PointCloud2Iterator<float> iter_z(pointcloud, "z");
-
-  for (const auto & point : points) {
-    *iter_x = point[0];
-    *iter_y = point[1];
-    *iter_z = point[2];
-    ++iter_x;
-    ++iter_y;
-    ++iter_z;
-  }
-
-  return pointcloud;
-}
-
-std::vector<std::array<float, 3>> extract_points_from_cloud(
-  const sensor_msgs::msg::PointCloud2 & cloud)
-{
-  std::vector<std::array<float, 3>> points;
-  sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud, "x");
-  sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
-  sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
-
-  for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
-    points.push_back({*iter_x, *iter_y, *iter_z});
-  }
-  return points;
-}
-
-bool is_same_points(
-  const std::vector<std::array<float, 3>> & points1,
-  const std::vector<std::array<float, 3>> & points2)
-{
-  if (points1.size() != points2.size()) {
-    printf("Size mismatch: %zu != %zu\n", points1.size(), points2.size());
-    return false;
-  }
-  // sort both vectors to ensure order does not affect comparison
-  std::vector<std::array<float, 3>> sorted_points1 = points1;
-  std::vector<std::array<float, 3>> sorted_points2 = points2;
-  std::sort(sorted_points1.begin(), sorted_points1.end());
-  std::sort(sorted_points2.begin(), sorted_points2.end());
-  // compare each point
-  for (size_t i = 0; i < sorted_points1.size(); ++i) {
-    if (sorted_points1[i] != sorted_points2[i]) {
-      printf("Point mismatch at index %zu: (%f, %f, %f) != (%f, %f, %f)\n", i,
-        sorted_points1[i][0], sorted_points1[i][1], sorted_points1[i][2],
-        sorted_points2[i][0], sorted_points2[i][1], sorted_points2[i][2]);
-      return false;
-    }
-  }
-  return true;
 }
 
 TEST(CropBoxFilterTest, ExtractPointsInsideBoxWithZeroLengthPointCloud)
@@ -164,8 +102,6 @@ TEST(CropBoxFilterTest, ExtractPointsInsideBox)
   CropBoxFilterCore crop_box_filter(box_size);
   PointCloud2 output = crop_box_filter.extract_pointcloud_inside_box(input_cloud);
 
-  printf("Output point count: %zu\n", output.data.size() / output.point_step);
-  printf("Expected point count: %zu\n", expected_points.size());
   EXPECT_TRUE(is_same_points(expected_points, extract_points_from_cloud(output)));
 }
 
