@@ -15,8 +15,8 @@
 #ifndef AUTOWARE__GROUND_FILTER__GROUND_FILTER_HPP_
 #define AUTOWARE__GROUND_FILTER__GROUND_FILTER_HPP_
 
-#include "autoware/ground_filter/data.hpp"
-#include "autoware/ground_filter/grid.hpp"
+#include "data.hpp"
+#include "grid.hpp"
 
 #include <autoware_utils_debug/time_keeper.hpp>
 #include <pcl/impl/point_types.hpp>

@@ -15,8 +15,8 @@
 #ifndef AUTOWARE__GROUND_FILTER__NODE_HPP_
 #define AUTOWARE__GROUND_FILTER__NODE_HPP_
 
-#include "autoware/ground_filter/data.hpp"
-#include "autoware/ground_filter/ground_filter.hpp"
+#include "data.hpp"
+#include "ground_filter.hpp"
 
 #include <autoware_utils_debug/time_keeper.hpp>
 #include <autoware_vehicle_info_utils/vehicle_info.hpp>
