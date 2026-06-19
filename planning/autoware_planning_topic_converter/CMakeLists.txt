@@ -24,4 +24,14 @@ rclcpp_components_register_node(planning_topic_converter
   EXECUTABLE path_to_trajectory_converter
 )
 
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_path_to_trajectory_node
+    test/test_path_to_trajectory_node.cpp
+  )
+  target_link_libraries(test_path_to_trajectory_node
+    planning_topic_converter
+  )
+endif()
+
 autoware_ament_auto_package()
