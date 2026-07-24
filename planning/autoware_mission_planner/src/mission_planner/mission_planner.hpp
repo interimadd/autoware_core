@@ -56,6 +56,7 @@ using autoware_planning_msgs::srv::ClearRoute;
 using autoware_planning_msgs::srv::SetLaneletRoute;
 using autoware_planning_msgs::srv::SetWaypointRoute;
 using geometry_msgs::msg::Pose;
+using geometry_msgs::msg::TransformStamped;
 using nav_msgs::msg::Odometry;
 using std_msgs::msg::Header;
 using unique_identifier_msgs::msg::UUID;
@@ -89,7 +90,6 @@ private:
   std::string map_frame_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
-  Pose transform_pose(const Pose & pose, const Header & header);
 
   rclcpp::Service<ClearRouteSpecs::Service>::SharedPtr srv_clear_route;
   rclcpp::Service<SetLaneletRouteSpecs::Service>::SharedPtr srv_set_lanelet_route;
@@ -126,14 +126,17 @@ private:
   void change_route();
   void change_route(const LaneletRoute & route);
   void cancel_route();
-  LaneletRoute create_route(const SetLaneletRoute::Request & req);
-  LaneletRoute create_route(const SetWaypointRoute::Request & req);
+  LaneletRoute create_route(
+    const SetLaneletRoute::Request & req, const TransformStamped & transform);
+  LaneletRoute create_route(
+    const SetWaypointRoute::Request & req, const TransformStamped & transform);
   LaneletRoute create_route(
     const Header & header, const std::vector<LaneletSegment> & segments, const Pose & goal_pose,
-    const UUID & uuid, const bool allow_goal_modification);
+    const UUID & uuid, const bool allow_goal_modification, const TransformStamped & transform);
   LaneletRoute create_route(
     const Header & header, const std::vector<Pose> & waypoints, const Pose & start_pose,
-    const Pose & goal_pose, const UUID & uuid, const bool allow_goal_modification);
+    const Pose & goal_pose, const UUID & uuid, const bool allow_goal_modification,
+    const TransformStamped & transform);
 
   void publish_pose_log(const Pose & pose, const std::string & pose_type);
 
