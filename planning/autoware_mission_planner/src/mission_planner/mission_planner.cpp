@@ -24,6 +24,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -227,6 +228,14 @@ void MissionPlanner::on_set_lanelet_route(
   const SetLaneletRoute::Request::SharedPtr req, const SetLaneletRoute::Response::SharedPtr res)
 {
   ScopedProcessingTimePublisher processing_time_publisher(*this);
+
+  std::optional<TransformStamped> transform_to_map_frame;
+  try {
+    transform_to_map_frame =
+      tf_buffer_.lookupTransform(map_frame_, req->header.frame_id, tf2::TimePointZero);
+  } catch (const tf2::TransformException & error) {
+  }
+
   using ResponseCode = autoware_adapi_v1_msgs::srv::SetRoute::Response;
   const auto is_reroute = state_.state == RouteState::SET;
 
@@ -257,17 +266,15 @@ void MissionPlanner::on_set_lanelet_route(
     return;
   }
 
-  TransformStamped transform;
-  try {
-    transform = tf_buffer_.lookupTransform(map_frame_, req->header.frame_id, tf2::TimePointZero);
-  } catch (const tf2::TransformException & error) {
+  if (!transform_to_map_frame) {
     set_fail_response(
-      res, autoware_common_msgs::msg::ResponseStatus::TRANSFORM_ERROR, error.what());
+      res, autoware_common_msgs::msg::ResponseStatus::TRANSFORM_ERROR,
+      "Failed to transform the pose to the map frame.");
     return;
   }
 
   change_state(is_reroute ? RouteState::REROUTING : RouteState::ROUTING);
-  const auto route = create_route(*req, transform);
+  const auto route = create_route(*req, *transform_to_map_frame);
 
   if (route.segments.empty()) {
     cancel_route();
@@ -296,6 +303,14 @@ void MissionPlanner::on_set_waypoint_route(
   const SetWaypointRoute::Request::SharedPtr req, const SetWaypointRoute::Response::SharedPtr res)
 {
   ScopedProcessingTimePublisher processing_time_publisher(*this);
+
+  std::optional<TransformStamped> transform_to_map_frame;
+  try {
+    transform_to_map_frame =
+      tf_buffer_.lookupTransform(map_frame_, req->header.frame_id, tf2::TimePointZero);
+  } catch (const tf2::TransformException & error) {
+  }
+
   using ResponseCode = autoware_adapi_v1_msgs::srv::SetRoutePoints::Response;
   const auto is_reroute = state_.state == RouteState::SET;
 
@@ -320,17 +335,15 @@ void MissionPlanner::on_set_waypoint_route(
                               operation_mode_state_->is_autoware_control_enabled
                           : false;
 
-  TransformStamped transform;
-  try {
-    transform = tf_buffer_.lookupTransform(map_frame_, req->header.frame_id, tf2::TimePointZero);
-  } catch (const tf2::TransformException & error) {
+  if (!transform_to_map_frame) {
     set_fail_response(
-      res, autoware_common_msgs::msg::ResponseStatus::TRANSFORM_ERROR, error.what());
+      res, autoware_common_msgs::msg::ResponseStatus::TRANSFORM_ERROR,
+      "Failed to transform the pose to the map frame.");
     return;
   }
 
   change_state(is_reroute ? RouteState::REROUTING : RouteState::ROUTING);
-  const auto route = create_route(*req, transform);
+  const auto route = create_route(*req, *transform_to_map_frame);
 
   if (route.segments.empty()) {
     cancel_route();
