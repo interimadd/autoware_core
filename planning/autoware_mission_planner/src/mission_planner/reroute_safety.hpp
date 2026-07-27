@@ -15,11 +15,12 @@
 #ifndef MISSION_PLANNER__REROUTE_SAFETY_HPP_
 #define MISSION_PLANNER__REROUTE_SAFETY_HPP_
 
-#include <rclcpp/logger.hpp>
-
 #include <autoware_planning_msgs/msg/lanelet_route.hpp>
 
 #include <lanelet2_core/LaneletMap.h>
+
+#include <optional>
+#include <string>
 
 namespace autoware::mission_planner
 {
@@ -31,7 +32,8 @@ namespace autoware::mission_planner
  * vehicle is moving. The length of road that the two routes share ahead of the ego (from the ego
  * position to the goal of the target route) must exceed a safety margin that grows with the
  * current velocity. This is the node-independent core of MissionPlanner::check_reroute_safety;
- * the node method forwards to it after validating its own odometry / map members.
+ * the node method forwards to it after validating its own odometry / map members and logs the
+ * returned error message on failure.
  *
  * @param original_route route the ego is currently following.
  * @param target_route candidate route to switch to.
@@ -40,15 +42,14 @@ namespace autoware::mission_planner
  * @param reroute_time_threshold time horizon used to scale the velocity-dependent safety length
  * [s].
  * @param minimum_reroute_length lower bound of the safety length [m].
- * @param logger logger used for the diagnostic messages emitted on the failure branches.
- * @return true if the reroute is safe (or the vehicle is effectively stopped), false otherwise.
+ * @return std::nullopt if the reroute is safe (or the vehicle is effectively stopped), otherwise
+ * an error message describing why the reroute is unsafe or could not be evaluated.
  */
-bool check_reroute_safety(
+std::optional<std::string> check_reroute_safety(
   const autoware_planning_msgs::msg::LaneletRoute & original_route,
   const autoware_planning_msgs::msg::LaneletRoute & target_route,
   const lanelet::LaneletMapConstPtr & lanelet_map, const double current_velocity,
-  const double reroute_time_threshold, const double minimum_reroute_length,
-  const rclcpp::Logger & logger);
+  const double reroute_time_threshold, const double minimum_reroute_length);
 
 }  // namespace autoware::mission_planner
 
