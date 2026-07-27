@@ -128,7 +128,7 @@ private:
     const SetWaypointRoute::Response::SharedPtr res);
 
   void change_state(RouteState::_state_type state);
-  void change_route();
+  void clear_route();
   void change_route(const LaneletRoute & route);
   void cancel_route();
   LaneletRoute create_route(
