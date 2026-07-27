@@ -36,6 +36,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -153,7 +154,10 @@ private:
   // flag to allow reroute in autonomous driving mode.
   // if false, reroute fails. if true, only safe reroute is allowed.
   bool allow_reroute_in_autonomous_mode_;
-  bool check_reroute_safety(const LaneletRoute & original_route, const LaneletRoute & target_route);
+  // Returns std::nullopt if the reroute is safe, otherwise an error message describing why it is
+  // unsafe or could not be evaluated.
+  std::optional<std::string> check_reroute_safety(
+    const LaneletRoute & original_route, const LaneletRoute & target_route);
 
   std::unique_ptr<autoware_utils_logging::LoggerLevelConfigure> logger_configure_;
   rclcpp::Publisher<autoware_internal_debug_msgs::msg::Float64Stamped>::SharedPtr
